@@ -40,7 +40,7 @@
 			 "\n\\|[^ \t]+\t\\| +" " "
 			 (buffer-substring
 			  (save-excursion (line-beginning-position))
-			  (if (memq symbol '(if while do switch for))
+			  (if (memq symbol '(if while switch for))
 			      (let ((sp (save-excursion (forward-sexp 2) (point)))
 				    (lp (line-end-position)))
 				(if (> sp lp) sp lp))

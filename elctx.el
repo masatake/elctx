@@ -122,13 +122,13 @@
 
 (defun elctx-print-back (back)
   (save-excursion
-    (while (eq (forward-line -1) 0)
+    (while (and back (eq (forward-line -1) 0))
       (elctx-print-1 (car back) (line-end-position))
       (setq back (cdr back)))))
 
 (defun elctx-print-front (front)
   (save-excursion
-    (while (eq (forward-line 1) 0)
+    (while (and front (eq (forward-line 1) 0))
       (elctx-print-1 (car front) (line-end-position))
       (setq front (cdr front)))))
 
