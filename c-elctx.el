@@ -37,7 +37,7 @@
 	  (when (funcall checker)
 	    (let* ((symbol (symbol-at-point))
 		   (str (replace-regexp-in-string  
-			 "\n\\|[^ \t]+\t\\| +" " "
+			 "\n\\|[^ \t]+\t\\|[^ \t] +" " "
 			 (buffer-substring
 			  (save-excursion (line-beginning-position))
 			  (if (memq symbol '(if while switch for))
