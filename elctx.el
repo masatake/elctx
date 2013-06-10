@@ -123,12 +123,12 @@
 
 (defun elctx-enlarge-area (p)
   (interactive "p")
-  (setq elctx-margin-length (1+ elctx-margin-length))
+  (setq elctx-margin-length (+ elctx-margin-length p))
   (elctx-eldoc-function))
 
 (defun elctx-shrink-area (p)
   (interactive "p")
-  (setq elctx-margin-length (1- elctx-margin-length))
+  (setq elctx-margin-length (- elctx-margin-length p))
   (if (< elctx-margin-length 32)
       (setq elctx-margin-length 32))
   (elctx-eldoc-function)
