@@ -29,23 +29,39 @@
 (defvar elctx-active-providers nil)
 (defvar elctx-margin-length 72)
 (defun elctx-make-cursor ()
-  (let ((indicators (mapconcat #'identity
-			       (mapcar #'(lambda (c)
-					   (propertize
-					    (symbol-name c)
-					    'face 
-					    (if (memq c elctx-active-providers)
-						'mode-line
-					      'mode-line-inactive
-					      )
-					    'help-echo (get c 'elctx-provider-doc)))
-				       elctx-providers)
-			       ""))
+  (let ((indicators 
+	 (mapconcat #'identity
+		    (mapcar #'(lambda (c)
+				(propertize
+				 (symbol-name c)
+				 'face 
+				 (if (memq c elctx-active-providers)
+				     'mode-line
+				   'mode-line-inactive
+				   )
+				 'help-echo (get c 'elctx-provider-doc)
+				 'keymap (let ((map (make-sparse-keymap)))
+					   (define-key map [right-margin mouse-1] 
+					     `(lambda (exclusive)
+						(interactive "P")
+						(elctx-toggle-provider ',c exclusive)))
+					   map)
+				 ))
+			    elctx-providers)
+		    ""))
 	(common-indicators
-	 (concat (propertize "+" 'face 'widget
-			     'help-echo "Enlarge area")
-		 (propertize "-" 'face 'widget
-			     'help-echo "Shrink area"))))
+	 (concat 
+	  (propertize "+" 'face 'widget
+		      'help-echo "Enlarge area1"
+		      'keymap (let ((map (make-sparse-keymap)))
+				(define-key map [right-margin mouse-1] 'elctx-enlarge-area)
+				map))
+	  (propertize "-" 'face 'widget
+		      'help-echo "Shrink area"
+		      'keymap (let ((map (make-sparse-keymap)))
+				(define-key map [right-margin mouse-1] 'elctx-shrink-area)
+				map)
+		      ))))
 
     (concat 
      indicators
@@ -144,19 +160,23 @@
 ;;(define-key global-map (kbd "<right-margin> <mouse-1>") (lambda (&rest rest)
 ;;							       (interactive "e")
 ;;							       (message "%s" rest)))
+(defun elctx-toggle-provider (sym exclusive)
+  (if exclusive
+      (setq elctx-active-providers (list sym))
+    (if (memq sym elctx-active-providers)
+	(setq elctx-active-providers
+	      (delete sym elctx-active-providers))
+      (setq elctx-active-providers
+	    (cons sym elctx-active-providers))))
+  (elctx-eldoc-function))
+
 (defun elctx-install-provider-keys (sym)
   (let ((n (symbol-name sym)))
     (local-set-key  n
-		   (lambda (exclusive) 
-		     (interactive "P")
-		     (if exclusive
-			 (setq elctx-active-providers (list sym))
-		       (if (memq sym elctx-active-providers)
-			   (setq elctx-active-providers
-				 (delete sym elctx-active-providers))
-			 (setq elctx-active-providers
-			       (cons sym elctx-active-providers))))
-		     (elctx-eldoc-function)))))
+		    (lambda (exclusive) 
+		      (interactive "P")
+		      (elctx-toggle-provider sym exclusive)))))
+
 (defun turn-on-elctx ()
   (setq elctx-providers (mapcar #'intern-soft (sort (mapcar #'symbol-name elctx-providers)
 						    #'string<)))
