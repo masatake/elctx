@@ -232,6 +232,35 @@
   s "pseudo variable slice"
   (c-elctx-slice-context-build))
 
+;;
+;; LINUX
+;;
+(define-elctx-provider c-elctx-LINUX-context-provider "" 
+  L "something interesting in LINUX kernel code"
+  (c-elctx-LINUX-context-build))
+(defvar c-elctx-LINUX-context-regexp
+  "^\\(?:__setup\\|module_init\\)\\>\\|\\<notifier_block\\>")
+
+(defun c-elctx-LINUX-context-build ()
+  (save-excursion
+    (let ((b (point-min))
+	  (e (point-max))
+	  (r c-elctx-LINUX-context-regexp)
+	  (result (list)))
+      (goto-char b)
+      (while (re-search-forward r e t)
+	(setq result (cons (list 
+			    (buffer-substring
+			     (line-beginning-position)
+			     (line-end-position))
+			    :point (point)
+			    :line (line-number-at-pos)
+			    :symbol (symbol-at-point)
+			    :engine 'LINUX) result))
+	(end-of-line)
+	)
+      result
+      )))
 
 ;;
 ;; Common
@@ -279,7 +308,7 @@
 			"\n")
 	     ) "\n")))
 
-(defvar c-elctx-providers '(p c l s))
+(defvar c-elctx-providers '(p c l s L))
 
 (defvar c-elctx-cache nil)
 (defun c-elctx-back-function ()
@@ -288,6 +317,7 @@
 		       (c-elctx-variable-context-provider)
 		       (c-elctx-control-context-provider)
 		       (c-elctx-slice-context-provider)
+		       (c-elctx-LINUX-context-provider)
 		       ))
   (c-elctx-render (copy-tree c-elctx-cache) 'back))
 
