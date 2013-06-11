@@ -17,6 +17,16 @@
 
 (require 'elctx)
 
+(defun c-elctx-wash-string (string)
+  (let* ((string (replace-regexp-in-string "\n" " " string))
+	 (prefix+rest (when (string-match "\\(^[ \t]+\\)\\(.*\\)" string)
+			(cons (match-string 1 string)
+			      (match-string 2 string)))))
+    (if prefix+rest
+	(concat (car prefix+rest) (replace-regexp-in-string "[\t ]+" " "
+							    (cdr prefix+rest)))
+      string)))
+
 (defun c-elctx-backward-face-context (checker engine)
   (let ((b (save-excursion
 	     (let ((p  (point))
@@ -36,8 +46,7 @@
 						      b))
 	  (when (funcall checker)
 	    (let* ((symbol (symbol-at-point))
-		   (str (replace-regexp-in-string  
-			 "\n\\|[^ \t]+\t\\| +" " "
+		   (str (c-elctx-wash-string
 			 (buffer-substring
 			  (save-excursion (line-beginning-position))
 			  (if (memq symbol '(if while switch for))
