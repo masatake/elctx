@@ -270,6 +270,13 @@
       )))
 
 ;;
+;; Registers
+;;
+;; (define-elctx-provider c-elctx-register-context-provider "" 
+;;   R "the positions of registers"
+;;   (c-elctx-register-context-build))
+
+;;
 ;; Common
 ;;
 (defun c-eldoc-build-context (climb adjust extract engine)
@@ -291,6 +298,18 @@
       context)))
 
 (defconst c-elctx-tab-lenngth 4)
+(defun c-elctx-render-decorate (l0)
+  (let ((str (car l0))
+	(line (cadr (memq :line l0))))
+    (if line
+	(propertize (copy-sequence str)
+		    'help-echo (format "line: %d" line)
+		    'keymap (let ((map (make-sparse-keymap)))
+			      (define-key map [right-margin mouse-1] `(lambda ()
+								       (interactive)
+								       (goto-line ,line)))
+			      map))
+      str)))
 (defun c-elctx-render (l pos)
    (let* ((cur (line-number-at-pos))
 		(l0 (delete-if
@@ -315,7 +334,7 @@
 	   (split-string 
 	    (replace-regexp-in-string 
 	     "\t" (make-string c-elctx-tab-lenngth ?\ )
-	     (mapconcat 'car l0
+	     (mapconcat #'c-elctx-render-decorate l0
 			"\n")
 	     ) "\n")))
 
