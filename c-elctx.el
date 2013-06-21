@@ -263,6 +263,7 @@
 			    :point (point)
 			    :line (line-number-at-pos)
 			    :symbol (symbol-at-point)
+			    :uniq t
 			    :engine 'LINUX) result))
 	(end-of-line)
 	)
@@ -272,9 +273,28 @@
 ;;
 ;; Registers
 ;;
-;; (define-elctx-provider c-elctx-register-context-provider "" 
-;;   R "the positions of registers"
-;;   (c-elctx-register-context-build))
+(define-elctx-provider c-elctx-register-context-provider "" 
+  r "the positions of registers"
+  (c-elctx-register-context-build))
+(defun c-elctx-register-context-build ()
+  (save-excursion
+    (let ((buf (current-buffer))
+	  (e (save-excursion (end-of-defun) (point)))
+	  (b  (save-excursion (beginning-of-defun) (point)))
+	  (result ()))
+      (mapc (lambda (r)
+	      (when (and (equal (marker-buffer (cdr r)) buf)
+			 (< (marker-position (cdr r)) e)
+			 (< b (marker-position (cdr r))))
+		(setq result
+		      (cons
+		       (list (format "#<%c>" (car r))
+			     :point (marker-position (cdr r))
+			     :line (line-number-at-pos (cdr r))
+			     :engine 'register)
+		       result))))
+       register-alist)
+      result)))
 
 ;;
 ;; Common
@@ -338,7 +358,7 @@
 			"\n")
 	     ) "\n")))
 
-(defvar c-elctx-providers '(p c l s L))
+(defvar c-elctx-providers '(p c l s L r))
 
 (defvar c-elctx-cache nil)
 (defun c-elctx-back-function ()
@@ -348,6 +368,7 @@
 		       (c-elctx-control-context-provider)
 		       (c-elctx-slice-context-provider)
 		       (c-elctx-LINUX-context-provider)
+		       (c-elctx-register-context-build)
 		       ))
   (c-elctx-render (copy-tree c-elctx-cache) 'back))
 
