@@ -16,6 +16,7 @@
 ;; along with This software.  If not, see <http://www.gnu.org/licenses/>.
 
 (require 'elctx)
+(require 'cl)
 
 (defun c-elctx-wash-string (string)
   (let* ((string (replace-regexp-in-string "\n" " " string))
@@ -239,7 +240,13 @@
   L "something interesting in LINUX kernel code"
   (c-elctx-LINUX-context-build))
 (defvar c-elctx-LINUX-context-regexp
-  "^\\(?:__setup\\|module_init\\)\\>\\|\\<notifier_block\\>")
+  (concat "^\\(?:__setup\\|module_init\\|EXPORT_SYMBOL\\)\\>\\|\\<\\(?:"
+	  (mapconcat #'identity
+		     '("notifier_block"
+		       "kthread_run"
+		       "kthread_create")
+		     "\\|")
+	  "\\)\\>"))
 
 (defun c-elctx-LINUX-context-build ()
   (save-excursion
