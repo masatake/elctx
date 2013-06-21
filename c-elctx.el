@@ -303,8 +303,12 @@
 		     (sort 
 		      (delete-duplicates l
 					 :test (lambda (a b)
-						 (eq (cadr (memq :line a))
-						     (cadr (memq :line b)))))
+						 (and (eq (cadr (memq :line a))
+							  (cadr (memq :line b)))
+						      (not (cadr (memq :uniq a)))
+						      (not (cadr (memq :uniq b)))
+						      )
+						 ))
 		      (lambda (a b)
 			(< (cadr (memq :line a))
 			   (cadr (memq :line b))))))))
