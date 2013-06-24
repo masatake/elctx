@@ -239,7 +239,7 @@
   L "something interesting in LINUX kernel code"
   (c-elctx-LINUX-context-build))
 (defvar c-elctx-LINUX-context-regexp
-  "^\\(?:__setup\\|module_init\\)\\>\\|\\<notifier_block\\>")
+  "^\\(?:__setup\\|module_init\\)\\>\\|\\<notifier_block\\|kthread_run\\>")
 
 (defun c-elctx-LINUX-context-build ()
   (save-excursion
