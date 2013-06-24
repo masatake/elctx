@@ -16,6 +16,7 @@
 ;; along with This software.  If not, see <http://www.gnu.org/licenses/>.
 
 (require 'elctx)
+(require 'cl)
 
 (defun c-elctx-wash-string (string)
   (let* ((string (replace-regexp-in-string "\n" " " string))
@@ -239,7 +240,13 @@
   L "something interesting in LINUX kernel code"
   (c-elctx-LINUX-context-build))
 (defvar c-elctx-LINUX-context-regexp
-  "^\\(?:__setup\\|module_init\\)\\>\\|\\<notifier_block\\|kthread_run\\>")
+  (concat "^\\(?:__setup\\|module_init\\|EXPORT_SYMBOL\\)\\>\\|\\<\\(?:"
+	  (mapconcat #'identity
+		     '("notifier_block"
+		       "kthread_run"
+		       "kthread_create")
+		     "\\|")
+	  "\\)\\>"))
 
 (defun c-elctx-LINUX-context-build ()
   (save-excursion
@@ -256,11 +263,38 @@
 			    :point (point)
 			    :line (line-number-at-pos)
 			    :symbol (symbol-at-point)
+			    :uniq t
 			    :engine 'LINUX) result))
 	(end-of-line)
 	)
       result
       )))
+
+;;
+;; Registers
+;;
+(define-elctx-provider c-elctx-register-context-provider "" 
+  r "the positions of registers"
+  (c-elctx-register-context-build))
+(defun c-elctx-register-context-build ()
+  (save-excursion
+    (let ((buf (current-buffer))
+	  (e (save-excursion (end-of-defun) (point)))
+	  (b  (save-excursion (beginning-of-defun) (point)))
+	  (result ()))
+      (mapc (lambda (r)
+	      (when (and (equal (marker-buffer (cdr r)) buf)
+			 (< (marker-position (cdr r)) e)
+			 (< b (marker-position (cdr r))))
+		(setq result
+		      (cons
+		       (list (format "#<%c>" (car r))
+			     :point (marker-position (cdr r))
+			     :line (line-number-at-pos (cdr r))
+			     :engine 'register)
+		       result))))
+       register-alist)
+      result)))
 
 ;;
 ;; Common
@@ -284,6 +318,18 @@
       context)))
 
 (defconst c-elctx-tab-lenngth 4)
+(defun c-elctx-render-decorate (l0)
+  (let ((str (car l0))
+	(line (cadr (memq :line l0))))
+    (if line
+	(propertize (copy-sequence str)
+		    'help-echo (format "line: %d" line)
+		    'keymap (let ((map (make-sparse-keymap)))
+			      (define-key map [right-margin mouse-1] `(lambda ()
+								       (interactive)
+								       (goto-line ,line)))
+			      map))
+      str)))
 (defun c-elctx-render (l pos)
    (let* ((cur (line-number-at-pos))
 		(l0 (delete-if
@@ -296,19 +342,23 @@
 		     (sort 
 		      (delete-duplicates l
 					 :test (lambda (a b)
-						 (eq (cadr (memq :line a))
-						     (cadr (memq :line b)))))
+						 (and (eq (cadr (memq :line a))
+							  (cadr (memq :line b)))
+						      (not (cadr (memq :uniq a)))
+						      (not (cadr (memq :uniq b)))
+						      )
+						 ))
 		      (lambda (a b)
 			(< (cadr (memq :line a))
 			   (cadr (memq :line b))))))))
 	   (split-string 
 	    (replace-regexp-in-string 
 	     "\t" (make-string c-elctx-tab-lenngth ?\ )
-	     (mapconcat 'car l0
+	     (mapconcat #'c-elctx-render-decorate l0
 			"\n")
 	     ) "\n")))
 
-(defvar c-elctx-providers '(p c l s L))
+(defvar c-elctx-providers '(p c l s L r))
 
 (defvar c-elctx-cache nil)
 (defun c-elctx-back-function ()
@@ -318,6 +368,7 @@
 		       (c-elctx-control-context-provider)
 		       (c-elctx-slice-context-provider)
 		       (c-elctx-LINUX-context-provider)
+		       (c-elctx-register-context-build)
 		       ))
   (c-elctx-render (copy-tree c-elctx-cache) 'back))
 
